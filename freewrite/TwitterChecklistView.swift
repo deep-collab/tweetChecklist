@@ -563,11 +563,7 @@ struct TwitterChecklistView: View {
 
 
     private func insertSnippetIntoEditor(_ snippet: String, itemId: UUID) {
-        // Copy to clipboard
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(snippet, forType: .string)
-
-        // Insert snippet into text editor
+        // Directly add snippet to the main text editor (do not copy to clipboard)
         let sep: String
         let newline = "\n"
         let doubleNewline = "\n\n"
@@ -653,11 +649,11 @@ struct TwitterChecklistView: View {
                                 Button(action: {
                                     insertSnippetIntoEditor(item.guidance, itemId: item.id)
                                 }) {
-                                    HStack(spacing: 2) {
-                                        Image(systemName: copiedTemplateId == item.id ? "checkmark" : "arrow.left.circle")
-                                            .font(.system(size: 8))
-                                        Text(copiedTemplateId == item.id ? "Inserted" : "Use")
-                                            .font(.system(size: 9, weight: .bold))
+                                    HStack(spacing: 3) {
+                                        Image(systemName: copiedTemplateId == item.id ? "checkmark" : "plus.circle.fill")
+                                            .font(.system(size: 9))
+                                        Text(copiedTemplateId == item.id ? "Added" : "Add to editor")
+                                            .font(.system(size: 9, weight: .semibold))
                                     }
                                     .foregroundColor(copiedTemplateId == item.id ? Color.green : textSecondary)
                                     .padding(.horizontal, 5)
@@ -666,7 +662,7 @@ struct TwitterChecklistView: View {
                                     .cornerRadius(3)
                                 }
                                 .buttonStyle(.plain)
-                                .help("Insert guidance into editor and check")
+                                .help("Add guidance directly into the text editor and check")
                             }
                         }
                     }
@@ -689,11 +685,11 @@ struct TwitterChecklistView: View {
                             Button(action: {
                                 insertSnippetIntoEditor(template, itemId: item.id)
                             }) {
-                                HStack(spacing: 2) {
-                                    Image(systemName: copiedTemplateId == item.id ? "checkmark" : "arrow.left.circle")
-                                        .font(.system(size: 8))
-                                    Text(copiedTemplateId == item.id ? "Inserted" : "Copy")
-                                        .font(.system(size: 9, weight: .bold))
+                                HStack(spacing: 3) {
+                                    Image(systemName: copiedTemplateId == item.id ? "checkmark" : "plus.circle.fill")
+                                        .font(.system(size: 9))
+                                    Text(copiedTemplateId == item.id ? "Added" : "Add to editor")
+                                        .font(.system(size: 9, weight: .semibold))
                                 }
                                 .foregroundColor(copiedTemplateId == item.id ? Color.green : textSecondary)
                                 .padding(.horizontal, 5)
@@ -702,7 +698,7 @@ struct TwitterChecklistView: View {
                                 .cornerRadius(3)
                             }
                             .buttonStyle(.plain)
-                            .help("Insert into editor, copy to clipboard, and check")
+                            .help("Add formula directly into the text editor and check")
                         }
                         .padding(6)
                         .background(bgSecondary.opacity(0.6))
@@ -732,19 +728,15 @@ struct TwitterChecklistView: View {
                     Button(action: {
                         insertSnippetIntoEditor(template, itemId: item.id)
                     }) {
-                        Label("Insert & Check Formula", systemImage: "arrow.left.circle")
-                    }
-                    Button(action: {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(template, forType: .string)
-                    }) {
-                        Label("Copy Formula Only", systemImage: "doc.on.doc")
+                        Label("Add Formula to Editor", systemImage: "plus.circle")
                     }
                 }
-                Button(action: {
-                    insertSnippetIntoEditor(item.guidance, itemId: item.id)
-                }) {
-                    Label("Insert & Check Guidance", systemImage: "text.quote")
+                if !item.guidance.isEmpty {
+                    Button(action: {
+                        insertSnippetIntoEditor(item.guidance, itemId: item.id)
+                    }) {
+                        Label("Add Guidance to Editor", systemImage: "plus.circle")
+                    }
                 }
                 Divider()
                 Button("Edit Requirement") {
