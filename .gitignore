@@ -64,3 +64,10 @@ playground.xcworkspace
 
 # Icon?
 Icon?
+
+# Local additions
+.agents/
+.gemini/
+_old_prototype/
+freewrite.app/
+

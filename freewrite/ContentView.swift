@@ -111,6 +111,9 @@ struct ContentView: View {
     @State private var showingChatMenu = false
     @State private var chatMenuAnchor: CGPoint = .zero
     @State private var showingSidebar = false  // Add this state variable
+    @State private var showingChecklist = false
+    @State private var isHoveringChecklist = false
+    @State private var bottomNavWidth: CGFloat = 1100
     @State private var hoveredTrashId: UUID? = nil
     @State private var hoveredExportId: UUID? = nil
     @State private var placeholderText: String = ""  // Add this line
@@ -852,6 +855,14 @@ struct ContentView: View {
         return "\(Int(fontSize))px"
     }
     
+    private var shouldUseCompactFontMenu: Bool {
+        if !isFullscreen {
+            return bottomNavWidth < 1250
+        } else {
+            return bottomNavWidth < 1000
+        }
+    }
+    
     // Add a color utility computed property
     var popoverBackgroundColor: Color {
         return colorScheme == .light ? Color(NSColor.controlBackgroundColor) : Color(NSColor.darkGray)
@@ -957,130 +968,31 @@ struct ContentView: View {
                                 isHoveringBottomNav = hovering
                             }
                         } else {
-                            // Font buttons (left)
-                            HStack(spacing: 8) {
-                                Button(fontSizeButtonTitle) {
-                                    if let currentIndex = fontSizes.firstIndex(of: fontSize) {
-                                        let nextIndex = (currentIndex + 1) % fontSizes.count
-                                        fontSize = fontSizes[nextIndex]
-                                    }
-                                }
-                                .buttonStyle(.plain)
-                                .foregroundColor(isHoveringSize ? textHoverColor : textColor)
-                                .onHover { hovering in
-                                    isHoveringSize = hovering
-                                    isHoveringBottomNav = hovering
-                                    if hovering {
-                                        NSCursor.pointingHand.push()
-                                    } else {
-                                        NSCursor.pop()
-                                    }
-                                }
-                                
-                                Text("•")
-                                    .foregroundColor(.gray)
-                                
-                                Button("Lato") {
-                                    selectedFont = "Lato-Regular"
-                                    currentRandomFont = ""
-                                }
-                                .buttonStyle(.plain)
-                                .foregroundColor(hoveredFont == "Lato" ? textHoverColor : textColor)
-                                .onHover { hovering in
-                                    hoveredFont = hovering ? "Lato" : nil
-                                    isHoveringBottomNav = hovering
-                                    if hovering {
-                                        NSCursor.pointingHand.push()
-                                    } else {
-                                        NSCursor.pop()
-                                    }
-                                }
-                                
-                                Text("•")
-                                    .foregroundColor(.gray)
-                                
-                                Button("Arial") {
-                                    selectedFont = "Arial"
-                                    currentRandomFont = ""
-                                }
-                                .buttonStyle(.plain)
-                                .foregroundColor(hoveredFont == "Arial" ? textHoverColor : textColor)
-                                .onHover { hovering in
-                                    hoveredFont = hovering ? "Arial" : nil
-                                    isHoveringBottomNav = hovering
-                                    if hovering {
-                                        NSCursor.pointingHand.push()
-                                    } else {
-                                        NSCursor.pop()
-                                    }
-                                }
-                                
-                                Text("•")
-                                    .foregroundColor(.gray)
-                                
-                                Button("System") {
-                                    selectedFont = ".AppleSystemUIFont"
-                                    currentRandomFont = ""
-                                }
-                                .buttonStyle(.plain)
-                                .foregroundColor(hoveredFont == "System" ? textHoverColor : textColor)
-                                .onHover { hovering in
-                                    hoveredFont = hovering ? "System" : nil
-                                    isHoveringBottomNav = hovering
-                                    if hovering {
-                                        NSCursor.pointingHand.push()
-                                    } else {
-                                        NSCursor.pop()
-                                    }
-                                }
-                                
-                                Text("•")
-                                    .foregroundColor(.gray)
-                                
-                                Button("Serif") {
-                                    selectedFont = "Times New Roman"
-                                    currentRandomFont = ""
-                                }
-                                .buttonStyle(.plain)
-                                .foregroundColor(hoveredFont == "Serif" ? textHoverColor : textColor)
-                                .onHover { hovering in
-                                    hoveredFont = hovering ? "Serif" : nil
-                                    isHoveringBottomNav = hovering
-                                    if hovering {
-                                        NSCursor.pointingHand.push()
-                                    } else {
-                                        NSCursor.pop()
-                                    }
-                                }
-                                
-                                Text("•")
-                                    .foregroundColor(.gray)
-                                
-                                Button(randomButtonTitle) {
-                                    if let randomFont = availableFonts.randomElement() {
-                                        selectedFont = randomFont
-                                        currentRandomFont = randomFont
-                                    }
-                                }
-                                .buttonStyle(.plain)
-                                .foregroundColor(hoveredFont == "Random" ? textHoverColor : textColor)
-                                .onHover { hovering in
-                                    hoveredFont = hovering ? "Random" : nil
-                                    isHoveringBottomNav = hovering
-                                    if hovering {
-                                        NSCursor.pointingHand.push()
-                                    } else {
-                                        NSCursor.pop()
-                                    }
-                                }
-                            }
-                            .padding(8)
-                            .cornerRadius(6)
-                            .onHover { hovering in
-                                isHoveringBottomNav = hovering
+                            // Font controls (responsive: dropdown when compact, expanded inline when wide)
+                            if shouldUseCompactFontMenu {
+                                CompactFontControlsView(
+                                    fontSize: $fontSize,
+                                    selectedFont: $selectedFont,
+                                    currentRandomFont: $currentRandomFont,
+                                    fontSizes: fontSizes,
+                                    availableFonts: availableFonts,
+                                    textColor: textColor,
+                                    textHoverColor: textHoverColor,
+                                    isHoveringBottomNav: $isHoveringBottomNav
+                                )
+                            } else {
+                                ExpandedFontControlsView(
+                                    fontSize: $fontSize,
+                                    selectedFont: $selectedFont,
+                                    currentRandomFont: $currentRandomFont,
+                                    fontSizes: fontSizes,
+                                    availableFonts: availableFonts,
+                                    textColor: textColor,
+                                    textHoverColor: textHoverColor,
+                                    isHoveringBottomNav: $isHoveringBottomNav
+                                )
                             }
                         }
-                        
                         Spacer()
                         
                         // Utility buttons (moved to right)
@@ -1464,6 +1376,9 @@ struct ContentView: View {
                             Button(action: {
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     showingSidebar.toggle()
+                                    if showingSidebar {
+                                        showingChecklist = false
+                                    }
                                 }
                             }) {
                                 Image(systemName: "clock.arrow.circlepath")
@@ -1472,6 +1387,36 @@ struct ContentView: View {
                             .buttonStyle(.plain)
                             .onHover { hovering in
                                 isHoveringClock = hovering
+                                isHoveringBottomNav = hovering
+                                if hovering {
+                                    NSCursor.pointingHand.push()
+                                } else {
+                                    NSCursor.pop()
+                                }
+                            }
+
+                            Text("•")
+                                .foregroundColor(.gray)
+
+                            // Twitter Checklist button
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    showingChecklist.toggle()
+                                    if showingChecklist {
+                                        showingSidebar = false
+                                    }
+                                }
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "checklist")
+                                    Text("Checklist")
+                                        .font(.system(size: 13))
+                                }
+                                .foregroundColor(isHoveringChecklist ? textHoverColor : (showingChecklist ? textHoverColor : textColor))
+                            }
+                            .buttonStyle(.plain)
+                            .onHover { hovering in
+                                isHoveringChecklist = hovering
                                 isHoveringBottomNav = hovering
                                 if hovering {
                                     NSCursor.pointingHand.push()
@@ -1488,6 +1433,19 @@ struct ContentView: View {
                     }
                     .padding()
                     .background(Color(colorScheme == .light ? .white : .black))
+                    .background(
+                        GeometryReader { navGeo in
+                            Color.clear
+                                .onAppear {
+                                    bottomNavWidth = navGeo.size.width
+                                }
+                                .onChange(of: navGeo.size.width) { newWidth in
+                                    if abs(bottomNavWidth - newWidth) > 1 {
+                                        bottomNavWidth = newWidth
+                                    }
+                                }
+                        }
+                    )
                     .opacity(bottomNavOpacity)
                     .onHover { hovering in
                         isHoveringBottomNav = hovering
@@ -1686,6 +1644,20 @@ struct ContentView: View {
                 .frame(width: 200)
                 .background(Color(colorScheme == .light ? .white : NSColor.black))
             }
+
+            // Twitter Checklist sidebar
+            if showingChecklist {
+                Divider()
+                TwitterChecklistView(
+                    text: $text,
+                    colorScheme: colorScheme,
+                    onClose: {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showingChecklist = false
+                        }
+                    }
+                )
+            }
         }
         .overlay {
             if showingVideoRecording {
@@ -1706,10 +1678,15 @@ struct ContentView: View {
         }
         .frame(minWidth: 1100, minHeight: 600)
         .animation(.easeInOut(duration: 0.2), value: showingSidebar)
+        .animation(.easeInOut(duration: 0.2), value: showingChecklist)
         .preferredColorScheme(colorScheme)
         .onAppear {
             showingSidebar = false  // Hide sidebar by default
             loadExistingEntries()
+            if let window = NSApplication.shared.windows.first {
+                isFullscreen = window.styleMask.contains(.fullScreen)
+                bottomNavWidth = window.frame.width
+            }
         }
         .onChange(of: showingVideoRecording) { _, isShowing in
             if !isShowing {
@@ -1741,6 +1718,11 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.willExitFullScreenNotification)) { _ in
             isFullscreen = false
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResizeNotification)) { _ in
+            if let window = NSApplication.shared.windows.first {
+                isFullscreen = window.styleMask.contains(.fullScreen)
+            }
         }
     }
     
@@ -2215,6 +2197,343 @@ struct ContentView: View {
         return pdfData as Data
     }
 }
+
+
+// MARK: - Responsive Font Controls
+
+struct CompactFontControlsView: View {
+    @Binding var fontSize: CGFloat
+    @Binding var selectedFont: String
+    @Binding var currentRandomFont: String
+    let fontSizes: [CGFloat]
+    let availableFonts: [String]
+    let textColor: Color
+    let textHoverColor: Color
+    @Binding var isHoveringBottomNav: Bool
+    
+    @State private var isHoveringSize = false
+    @State private var isHoveringFont = false
+    
+    var fontSizeButtonTitle: String {
+        "\(Int(fontSize))px"
+    }
+    
+    var currentFontDisplayName: String {
+        if !currentRandomFont.isEmpty {
+            return "Random"
+        }
+        switch selectedFont {
+        case "Lato-Regular":
+            return "Lato"
+        case "Arial":
+            return "Arial"
+        case ".AppleSystemUIFont":
+            return "System"
+        case "Times New Roman":
+            return "Serif"
+        default:
+            return selectedFont
+        }
+    }
+    
+    var randomButtonTitle: String {
+        currentRandomFont.isEmpty ? "Random" : "Random [\(currentRandomFont)]"
+    }
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            // Font Size Dropdown
+            Menu {
+                ForEach(fontSizes, id: \.self) { size in
+                    Button(action: {
+                        fontSize = size
+                    }) {
+                        if fontSize == size {
+                            Label("\(Int(size))px", systemImage: "checkmark")
+                        } else {
+                            Text("\(Int(size))px")
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 3) {
+                    Text(fontSizeButtonTitle)
+                        .font(.system(size: 13))
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 8, weight: .bold))
+                        .opacity(0.6)
+                }
+                .foregroundColor(isHoveringSize ? textHoverColor : textColor)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .onHover { hovering in
+                isHoveringSize = hovering
+                isHoveringBottomNav = hovering
+                if hovering {
+                    NSCursor.pointingHand.push()
+                } else {
+                    NSCursor.pop()
+                }
+            }
+            
+            Text("•")
+                .foregroundColor(.gray)
+                
+            // Font Style Dropdown
+            Menu {
+                Section("Font Style") {
+                    Button(action: {
+                        selectedFont = "Lato-Regular"
+                        currentRandomFont = ""
+                    }) {
+                        if selectedFont == "Lato-Regular" && currentRandomFont.isEmpty {
+                            Label("Lato", systemImage: "checkmark")
+                        } else {
+                            Text("Lato")
+                        }
+                    }
+                    
+                    Button(action: {
+                        selectedFont = "Arial"
+                        currentRandomFont = ""
+                    }) {
+                        if selectedFont == "Arial" && currentRandomFont.isEmpty {
+                            Label("Arial", systemImage: "checkmark")
+                        } else {
+                            Text("Arial")
+                        }
+                    }
+                    
+                    Button(action: {
+                        selectedFont = ".AppleSystemUIFont"
+                        currentRandomFont = ""
+                    }) {
+                        if selectedFont == ".AppleSystemUIFont" && currentRandomFont.isEmpty {
+                            Label("System", systemImage: "checkmark")
+                        } else {
+                            Text("System")
+                        }
+                    }
+                    
+                    Button(action: {
+                        selectedFont = "Times New Roman"
+                        currentRandomFont = ""
+                    }) {
+                        if selectedFont == "Times New Roman" && currentRandomFont.isEmpty {
+                            Label("Serif", systemImage: "checkmark")
+                        } else {
+                            Text("Serif")
+                        }
+                    }
+                    
+                    Divider()
+                    
+                    Button(action: {
+                        if let randomFont = availableFonts.randomElement() {
+                            selectedFont = randomFont
+                            currentRandomFont = randomFont
+                        }
+                    }) {
+                        if !currentRandomFont.isEmpty {
+                            Label(randomButtonTitle, systemImage: "checkmark")
+                        } else {
+                            Text("Random")
+                        }
+                    }
+                }
+                
+                Divider()
+                
+                Section("Font Size") {
+                    ForEach(fontSizes, id: \.self) { size in
+                        Button(action: {
+                            fontSize = size
+                        }) {
+                            if fontSize == size {
+                                Label("\(Int(size))px", systemImage: "checkmark")
+                            } else {
+                                Text("\(Int(size))px")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 3) {
+                    Text(currentFontDisplayName)
+                        .font(.system(size: 13))
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 8, weight: .bold))
+                        .opacity(0.6)
+                }
+                .foregroundColor(isHoveringFont ? textHoverColor : textColor)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .onHover { hovering in
+                isHoveringFont = hovering
+                isHoveringBottomNav = hovering
+                if hovering {
+                    NSCursor.pointingHand.push()
+                } else {
+                    NSCursor.pop()
+                }
+            }
+        }
+        .padding(8)
+        .cornerRadius(6)
+        .onHover { hovering in
+            isHoveringBottomNav = hovering
+        }
+    }
+}
+
+struct ExpandedFontControlsView: View {
+    @Binding var fontSize: CGFloat
+    @Binding var selectedFont: String
+    @Binding var currentRandomFont: String
+    let fontSizes: [CGFloat]
+    let availableFonts: [String]
+    let textColor: Color
+    let textHoverColor: Color
+    @Binding var isHoveringBottomNav: Bool
+    
+    @State private var isHoveringSize = false
+    @State private var hoveredFont: String? = nil
+    
+    var fontSizeButtonTitle: String {
+        "\(Int(fontSize))px"
+    }
+    
+    var randomButtonTitle: String {
+        currentRandomFont.isEmpty ? "Random" : "Random [\(currentRandomFont)]"
+    }
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            Button(fontSizeButtonTitle) {
+                if let currentIndex = fontSizes.firstIndex(of: fontSize) {
+                    let nextIndex = (currentIndex + 1) % fontSizes.count
+                    fontSize = fontSizes[nextIndex]
+                }
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(isHoveringSize ? textHoverColor : textColor)
+            .onHover { hovering in
+                isHoveringSize = hovering
+                isHoveringBottomNav = hovering
+                if hovering {
+                    NSCursor.pointingHand.push()
+                } else {
+                    NSCursor.pop()
+                }
+            }
+            
+            Text("•")
+                .foregroundColor(.gray)
+            
+            Button("Lato") {
+                selectedFont = "Lato-Regular"
+                currentRandomFont = ""
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(hoveredFont == "Lato" ? textHoverColor : textColor)
+            .onHover { hovering in
+                hoveredFont = hovering ? "Lato" : nil
+                isHoveringBottomNav = hovering
+                if hovering {
+                    NSCursor.pointingHand.push()
+                } else {
+                    NSCursor.pop()
+                }
+            }
+            
+            Text("•")
+                .foregroundColor(.gray)
+            
+            Button("Arial") {
+                selectedFont = "Arial"
+                currentRandomFont = ""
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(hoveredFont == "Arial" ? textHoverColor : textColor)
+            .onHover { hovering in
+                hoveredFont = hovering ? "Arial" : nil
+                isHoveringBottomNav = hovering
+                if hovering {
+                    NSCursor.pointingHand.push()
+                } else {
+                    NSCursor.pop()
+                }
+            }
+            
+            Text("•")
+                .foregroundColor(.gray)
+            
+            Button("System") {
+                selectedFont = ".AppleSystemUIFont"
+                currentRandomFont = ""
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(hoveredFont == "System" ? textHoverColor : textColor)
+            .onHover { hovering in
+                hoveredFont = hovering ? "System" : nil
+                isHoveringBottomNav = hovering
+                if hovering {
+                    NSCursor.pointingHand.push()
+                } else {
+                    NSCursor.pop()
+                }
+            }
+            
+            Text("•")
+                .foregroundColor(.gray)
+            
+            Button("Serif") {
+                selectedFont = "Times New Roman"
+                currentRandomFont = ""
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(hoveredFont == "Serif" ? textHoverColor : textColor)
+            .onHover { hovering in
+                hoveredFont = hovering ? "Serif" : nil
+                isHoveringBottomNav = hovering
+                if hovering {
+                    NSCursor.pointingHand.push()
+                } else {
+                    NSCursor.pop()
+                }
+            }
+            
+            Text("•")
+                .foregroundColor(.gray)
+            
+            Button(randomButtonTitle) {
+                if let randomFont = availableFonts.randomElement() {
+                    selectedFont = randomFont
+                    currentRandomFont = randomFont
+                }
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(hoveredFont == "Random" ? textHoverColor : textColor)
+            .onHover { hovering in
+                hoveredFont = hovering ? "Random" : nil
+                isHoveringBottomNav = hovering
+                if hovering {
+                    NSCursor.pointingHand.push()
+                } else {
+                    NSCursor.pop()
+                }
+            }
+        }
+        .padding(8)
+        .cornerRadius(6)
+        .onHover { hovering in
+            isHoveringBottomNav = hovering
+        }
+    }
+}
+
 
 // Helper function to calculate line height
 func getLineHeight(font: NSFont) -> CGFloat {
