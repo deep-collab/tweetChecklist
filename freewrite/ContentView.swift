@@ -1676,7 +1676,7 @@ struct ContentView: View {
                 .zIndex(10)
             }
         }
-        .frame(minWidth: 1100, minHeight: 600)
+        .frame(minWidth: showingChecklist ? 1450 : 1100, minHeight: 600)
         .animation(.easeInOut(duration: 0.2), value: showingSidebar)
         .animation(.easeInOut(duration: 0.2), value: showingChecklist)
         .preferredColorScheme(colorScheme)
@@ -1687,6 +1687,9 @@ struct ContentView: View {
                 isFullscreen = window.styleMask.contains(.fullScreen)
                 bottomNavWidth = window.frame.width
             }
+        }
+        .onChange(of: showingChecklist) { _, isOpen in
+            adjustWindowForChecklist(isOpen: isOpen)
         }
         .onChange(of: showingVideoRecording) { _, isShowing in
             if !isShowing {
@@ -1726,6 +1729,45 @@ struct ContentView: View {
         }
     }
     
+    private func adjustWindowForChecklist(isOpen: Bool) {
+        guard let window = NSApplication.shared.windows.first(where: { $0.canBecomeKey && $0.isVisible }) ?? NSApplication.shared.keyWindow else { return }
+        // Do not adjust window frame if in full screen
+        if window.styleMask.contains(.fullScreen) { return }
+        
+        let checklistWidth: CGFloat = 350
+        let currentFrame = window.frame
+        let screenFrame = window.screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? currentFrame
+        
+        let targetWidth: CGFloat
+        var targetOriginX = currentFrame.origin.x
+        
+        if isOpen {
+            targetWidth = currentFrame.size.width + checklistWidth
+            // If expanding to the right would go beyond screen edge, shift window left
+            if targetOriginX + targetWidth > screenFrame.maxX {
+                targetOriginX = max(screenFrame.minX, screenFrame.maxX - targetWidth)
+            }
+        } else {
+            targetWidth = max(1100, currentFrame.size.width - checklistWidth)
+            if targetOriginX + targetWidth > screenFrame.maxX {
+                targetOriginX = max(screenFrame.minX, screenFrame.maxX - targetWidth)
+            }
+        }
+        
+        let targetFrame = NSRect(
+            x: targetOriginX,
+            y: currentFrame.origin.y,
+            width: targetWidth,
+            height: currentFrame.size.height
+        )
+        
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.22
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            window.animator().setFrame(targetFrame, display: true)
+        })
+    }
+
     private func backgroundColor(for entry: HumanEntry) -> Color {
         if entry.id == selectedEntryId {
             return Color.gray.opacity(0.1)  // More subtle selection highlight
